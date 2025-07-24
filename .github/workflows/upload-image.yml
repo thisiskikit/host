@@ -1,0 +1,45 @@
+name: Upload Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_url:
+        description: '호스팅할 이미지의 외부 URL'
+        required: true
+        type: string
+      filename:
+        description: '리포지토리에 저장할 파일명 (예: foo.png)'
+        required: true
+        type: string
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    outputs:
+      raw_url: ${{ steps.url.outputs.raw_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download image
+        run: |
+          mkdir -p images
+          curl -fsSL "${{ github.event.inputs.image_url }}" \
+            -o images/"${{ github.event.inputs.filename }}"
+
+      - name: Commit & Push image
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Add image ${{ github.event.inputs.filename }}"
+          file_pattern: "images/${{ github.event.inputs.filename }}"
+
+      - name: Set raw URL output
+        id: url
+        run: |
+          RAW="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/images/${{ github.event.inputs.filename }}"
+          echo "::set-output name=raw_url::$RAW"
+
+      - name: Show result
+        run: |
+          echo "✅ Image has been uploaded!"
+          echo "🔗 Raw URL: ${{ steps.url.outputs.raw_url }}"
