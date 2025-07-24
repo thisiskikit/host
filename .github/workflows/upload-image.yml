@@ -1,4 +1,6 @@
 name: Upload Image
+
+# 워크플로우에 repo contents 쓰기 권한 부여
 permissions:
   contents: write
 
@@ -17,11 +19,18 @@ on:
 jobs:
   upload:
     runs-on: ubuntu-latest
+    # (선택) job 단위로 권한 다시 지정 가능
+    # permissions:
+    #   contents: write
+
     outputs:
-      raw_url: ${{ steps.url.outputs.raw_url }}
+      raw_url: ${{ steps.set_url.outputs.raw_url }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download image
         run: |
@@ -32,16 +41,17 @@ jobs:
       - name: Commit & Push image
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           commit_message: "Add image ${{ github.event.inputs.filename }}"
           file_pattern: "images/${{ github.event.inputs.filename }}"
 
       - name: Set raw URL output
-        id: url
+        id: set_url
         run: |
           RAW="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/images/${{ github.event.inputs.filename }}"
-          echo "::set-output name=raw_url::$RAW"
+          echo "raw_url=$RAW" >> $GITHUB_OUTPUT
 
       - name: Show result
         run: |
-          echo "✅ Image has been uploaded!"
-          echo "🔗 Raw URL: ${{ steps.url.outputs.raw_url }}"
+          echo "✅ 이미지 업로드 완료!"
+          echo "🔗 Raw URL: ${{ steps.set_url.outputs.raw_url }}"
