@@ -1,4 +1,6 @@
 name: Upload Image
+permissions:
+  contents: write
 
 on:
   workflow_dispatch:
